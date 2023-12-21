@@ -1,6 +1,10 @@
-# CRUD_Java1
+# CRUD_Java1 (Development)
 
 This repository contains a Java CRUD application, which is an improved version of a project developed earlier. The original project can be found [here](https://github.com/GuilhermeLBonomo/SENAC/blob/main/ProgramacaoJava/ProvaJava2Periodo2).
+
+## Development Status
+
+⚠️ **This project is currently under active development. Use it with caution, as features may be incomplete or subject to change.**
 
 ## Overview
 
