@@ -17,7 +17,7 @@ public final class FuncoesUtilitarias {
     }
 
     @Contract("null -> fail")
-    public static @NotNull String validarStrings(final String string) {
+    public static @NotNull String validarString(final String string) {
         final String regex = "^[\\p{L}0-9,.-]{1," + TAMANHO_MAXIMO_STRING + "}$";
         if (string == null || !string.matches(regex)) {
             throw new IllegalArgumentException("String inválida.");
@@ -50,7 +50,7 @@ public final class FuncoesUtilitarias {
             }
 
             if (arg instanceof String) {
-                validarStrings((String) arg);
+                validarString((String) arg);
             } else if (arg instanceof Integer) {
                 validarID((Integer) arg);
             } else if (arg instanceof Double) {

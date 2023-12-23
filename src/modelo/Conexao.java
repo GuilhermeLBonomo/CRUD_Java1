@@ -38,57 +38,55 @@ public final class Conexao {
         }
     }
 
-
-    public static boolean executarComandoSQL(final String database, final String tabela, final String sql, final Object... parametros) throws SQLException {
+    public static boolean executarComandoSQL(final String database, final String tabela, final String sql, final Object... parametros) {
         Connection conexao = null;
+
         try {
             String database_out = checarDatabase(database);
             checarTabela(database_out, tabela);
 
             conexao = obterConexao();
-            try (PreparedStatement ps = conexao.prepareStatement(sql)) {
-                for (int i = 0; i < parametros.length; i++) {
-                    ps.setObject(i + 1, parametros[i]);
-                }
+            PreparedStatement ps = conexao.prepareStatement(sql);
 
-                int linhasAfetadas = ps.executeUpdate();
-                return linhasAfetadas > 0;
+            for (int i = 0; i < parametros.length; i++) {
+                ps.setObject(i + 1, parametros[i]);
             }
+
+            int linhasAfetadas = ps.executeUpdate();
+            fecharConexao(conexao);
+            return linhasAfetadas > 0;
         } catch (SQLException e) {
             System.err.printf("Erro SQL ao executar comando: %s%n", e.getMessage());
             return false;
         } catch (Exception e) {
             System.err.printf("Erro desconhecido ao executar comando: %s%n", e.getMessage());
             return false;
-        } finally {
-            fecharConexao(conexao);
         }
     }
 
     public static ResultSet executarConsultaSQL(final String database, final String tabela, final String sql, final Object... parametros) throws SQLException {
         Connection conexao = null;
-        ResultSet resultSet;
+        ResultSet resultSet = null;
+
         try {
             conexao = obterConexao();
             checarDatabase(database);
             checarTabela(database, tabela);
 
-            try (PreparedStatement ps = conexao.prepareStatement(sql)) {
-                for (int i = 0; i < parametros.length; i++) {
-                    ps.setObject(i + 1, parametros[i]);
-                }
+            PreparedStatement ps = conexao.prepareStatement(sql);
 
-                resultSet = ps.executeQuery();
+            for (int i = 0; i < parametros.length; i++) {
+                ps.setObject(i + 1, parametros[i]);
             }
+
+            resultSet = ps.executeQuery();
+            fecharConexao(conexao);
         } catch (SQLException e) {
             System.err.printf("Erro SQL ao executar consulta: %s%n", e.getMessage());
-            throw e;
         } catch (Exception e) {
             System.err.printf("Erro desconhecido ao executar consulta: %s%n", e.getMessage());
-            throw new SQLException("Erro desconhecido ao executar consulta.", e);
-        } finally {
-            fecharConexao(conexao);
         }
+
         return resultSet;
     }
 
