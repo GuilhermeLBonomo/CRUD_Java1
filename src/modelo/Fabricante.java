@@ -10,6 +10,7 @@ import static modelo.Conexao.executarConsultaSQL;
 import static modelo.FuncoesUtilitarias.*;
 
 public final class Fabricante {
+    private static final String DATABASE = Conexao.getDATABASE();
     private final static String TABELA = "Fabricante";
     private Integer FabricanteID;
     private String Nome;
@@ -36,6 +37,9 @@ public final class Fabricante {
         } catch (IllegalArgumentException e) {
             System.err.printf("Erro ao definir ID do fabricante: %s%n", e.getMessage());
             throw e;
+        } catch (Exception e) {
+            System.err.printf("Erro desconhecido ao definir ID do fabricante: %s%n", e.getMessage());
+            throw e;
         }
     }
 
@@ -48,6 +52,9 @@ public final class Fabricante {
             this.Nome = validarNome(nome);
         } catch (IllegalArgumentException e) {
             System.err.printf("Erro ao definir nome do Fabricante: %s%n", e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            System.err.printf("Erro desconhecido ao definir nome do Fabricante: %s%n", e.getMessage());
             throw e;
         }
     }
@@ -62,6 +69,9 @@ public final class Fabricante {
         } catch (IllegalArgumentException e) {
             System.err.printf("Erro ao definir localização do Fabricante: %s%n", e.getMessage());
             throw e;
+        } catch (Exception e) {
+            System.err.printf("Erro desconhecido ao definir localização do Fabricante: %s%n", e.getMessage());
+            throw e;
         }
     }
 
@@ -75,6 +85,9 @@ public final class Fabricante {
         } catch (IllegalArgumentException e) {
             System.err.printf("Erro ao definir descrição do Fabricante: %s%n", e.getMessage());
             throw e;
+        } catch (Exception e) {
+            System.err.printf("Erro desconhecido ao definir descrição do Fabricante: %s%n", e.getMessage());
+            throw e;
         }
     }
 
@@ -86,44 +99,49 @@ public final class Fabricante {
     public boolean cadastrarFabricante(final Integer fabricanteID, final String nome, final String localizacao, final String descricao) {
         try {
             Fabricante novoFabricante = new Fabricante(fabricanteID, nome, localizacao, descricao);
+            String sql = "INSERT INTO %s (FabricanteID, Nome, Localizacao, Descricao) VALUES (?, ?, ?, ?)".formatted(TABELA);
+            return executarComandoSQL(DATABASE, TABELA, sql, novoFabricante.FabricanteID, novoFabricante.Nome, novoFabricante.Localizacao, novoFabricante.Descricao);
         } catch (IllegalArgumentException e) {
             System.err.printf("Erro ao criar o Fabricante: %s%n", e.getMessage());
-            return false;
+        } catch (Exception e) {
+            System.err.printf("Erro desconhecido ao criar o Fabricante: %s%n", e.getMessage());
         }
-        String sql = "INSERT INTO %s (FabricanteID, Nome, Localizacao, Descricao) VALUES (?, ?, ?, ?)".formatted(TABELA);
-        return executarComandoSQL("", TABELA, sql, fabricanteID, nome, localizacao, descricao);
+        return false;
     }
 
     public boolean removerFabricante(final Integer fabricanteID) {
         try {
-            validarID(fabricanteID);
+            String sql = "DELETE FROM %s WHERE FabricanteID = ?".formatted(TABELA);
+            return executarComandoSQL(DATABASE, TABELA, sql, validarID(fabricanteID));
         } catch (IllegalArgumentException e) {
             System.err.printf("Erro ao remover o Fabricante: %s%n", e.getMessage());
-            return false;
+        } catch (Exception e) {
+            System.err.printf("Erro desconhecido ao remover o Fabricante: %s%n", e.getMessage());
         }
-        final String sql = "DELETE FROM %s WHERE FabricanteID = ?".formatted(TABELA);
-        return executarComandoSQL("", TABELA, sql, fabricanteID);
+        return false;
+
     }
 
     public boolean atualizarFabricante(final Integer fabricanteID, final String novoNome, final String novaLocalizacao, final String novaDescricao) {
         try {
-            validarNome(novoNome);
-            validarArgumentos(fabricanteID, novaLocalizacao, novaDescricao);
+            Fabricante fabricanteNovo = new Fabricante(fabricanteID, novoNome, novaLocalizacao, novaDescricao);
+            String sql = "UPDATE %s SET Nome=?, Localizacao=?, Descricao=? WHERE FabricanteID=?".formatted(TABELA);
+            return executarComandoSQL(DATABASE, TABELA, sql, fabricanteNovo.Nome, fabricanteNovo.Localizacao, fabricanteNovo.Descricao, fabricanteID);
         } catch (IllegalArgumentException e) {
             System.err.printf("Erro ao atualizar o Fabricante: %s%n", e.getMessage());
-            return false;
+        } catch (Exception e) {
+            System.err.printf("Erro desconhecido ao atualizar o Fabricante: %s%n", e.getMessage());
         }
-        final String sql = "UPDATE %s SET Nome=?, Localizacao=?, Descricao=? WHERE FabricanteID=?".formatted(TABELA);
-        return executarComandoSQL("", TABELA, sql, novoNome, novaLocalizacao, novaDescricao, fabricanteID);
+        return false;
     }
 
 
     public List<Fabricante> consultarFabricantesPorNome(final String nome) {
         List<Fabricante> fabricantes = new ArrayList<>();
-
         String sql = "SELECT * FROM %s WHERE Nome LIKE ? ORDER BY Nome".formatted(TABELA);
 
-        try (ResultSet rs = executarConsultaSQL("", TABELA, sql, "%" + nome + "%")) {
+        try (ResultSet rs = executarConsultaSQL(DATABASE, TABELA, sql, "%" + nome + "%")) {
+            validarNome(nome);
             while (rs.next()) {
                 Fabricante fabricante = new Fabricante();
                 fabricante.FabricanteID = rs.getInt("FabricanteID");
@@ -134,14 +152,16 @@ public final class Fabricante {
             }
         } catch (SQLException erro) {
             System.err.printf("Erro ao consultar os Fabricantes por nome: %s%n", erro.getMessage());
+        } catch (Exception e) {
+            System.err.printf("Erro desconhecido ao consultar os Fabricantes por nome: %s%n", e.getMessage());
         }
-
         return fabricantes;
     }
 
     public Fabricante consultarFabricante(final Integer fabricanteID) {
         String sql = "SELECT * FROM %s WHERE FabricanteID=?".formatted(TABELA);
-        try (ResultSet rs = executarConsultaSQL("", TABELA, sql, fabricanteID)) {
+        try (ResultSet rs = executarConsultaSQL(DATABASE, TABELA, sql, fabricanteID)) {
+            validarID(fabricanteID);
             if (!rs.isBeforeFirst()) {
                 System.err.println("Fabricante não encontrado!");
             } else {
@@ -156,6 +176,8 @@ public final class Fabricante {
             }
         } catch (SQLException erro) {
             System.err.printf("Erro ao consultar o fabricante: %s%n", erro.getMessage());
+        } catch (Exception e) {
+            System.err.printf("Erro desconhecido ao consultar o fabricante: %s%n", e.getMessage());
         }
         return null;
     }

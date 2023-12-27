@@ -1,6 +1,5 @@
 package modelo;
 
-import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -11,6 +10,7 @@ import static modelo.Conexao.executarConsultaSQL;
 import static modelo.FuncoesUtilitarias.*;
 
 public final class Categoria {
+    private static final String DATABASE = Conexao.getDATABASE();
     private static final String TABELA = "Categoria";
     private Integer CategoriaID;
     private String Nome;
@@ -37,6 +37,9 @@ public final class Categoria {
         } catch (IllegalArgumentException e) {
             System.err.printf("Erro ao definir o ID da categoria: %s%n", e.getMessage());
             throw e;
+        } catch (Exception e) {
+            System.err.printf("Erro desconhecido ao definir o ID da categoria: %s%n", e.getMessage());
+            throw e;
         }
     }
 
@@ -49,6 +52,9 @@ public final class Categoria {
             this.Nome = validarNome(nome);
         } catch (IllegalArgumentException e) {
             System.err.printf("Erro ao definir nome  da categoria: %s%n", e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            System.err.printf("Erro desconhecido ao definir nome da categoria: %s%n", e.getMessage());
             throw e;
         }
     }
@@ -63,6 +69,9 @@ public final class Categoria {
         } catch (IllegalArgumentException e) {
             System.err.printf("Erro ao definir status da categoria: %s%n", e.getMessage());
             throw e;
+        } catch (Exception e) {
+            System.err.printf("Erro desconhecido ao definir status da categoria: %s%n", e.getMessage());
+            throw e;
         }
     }
 
@@ -76,6 +85,9 @@ public final class Categoria {
         } catch (IllegalArgumentException e) {
             System.err.printf("Erro ao definir descrição da categoria: %s%n", e.getMessage());
             throw e;
+        } catch (Exception e) {
+            System.err.printf("Erro desconhecido ao definir descrição da categoria: %s%n", e.getMessage());
+            throw e;
         }
     }
 
@@ -85,20 +97,22 @@ public final class Categoria {
     }
 
     public boolean cadastrarCategoria(final Integer categoriaID, final String nome, final String status, final String descricao) {
-        Connection conexao = null;
         try {
-            Categoria categoria = new Categoria(categoriaID, nome, status, descricao);
+            Categoria novaCategoria = new Categoria(categoriaID, nome, status, descricao);
+            String sql = "INSERT INTO %s (CategoriaID, Nome, Status, Descricao) VALUES (?, ?, ?, ?)".formatted(TABELA);
+            return executarComandoSQL(DATABASE, TABELA, sql, novaCategoria.CategoriaID, novaCategoria.Nome, novaCategoria.Status, novaCategoria.Descricao);
         } catch (IllegalArgumentException e) {
             System.err.printf("Erro ao definir categoria: %s%n", e.getMessage());
-            return false;
+        } catch (Exception e) {
+            System.err.printf("Erro desconhecido ao definir categoria: %s%n", e.getMessage());
         }
-        String sql = "INSERT INTO %s (CategoriaID, Nome, Status, Descricao) VALUES (?, ?, ?, ?)".formatted(TABELA);
-        return executarComandoSQL("", TABELA, sql, String.valueOf(categoriaID), nome, status, descricao);
+        return false;
     }
 
     public Categoria consultarCategoria(final Integer categoriaID) {
         String sql = "SELECT * FROM %s WHERE CategoriaId = ?".formatted(TABELA);
-        try (ResultSet rs = executarConsultaSQL("", TABELA, sql, categoriaID)) {
+        try (ResultSet rs = executarConsultaSQL(DATABASE, TABELA, sql, categoriaID)) {
+            validarID(categoriaID);
             if (!rs.isBeforeFirst()) {
                 System.err.println("Categoria não encontrada!");
             } else {
@@ -121,10 +135,10 @@ public final class Categoria {
 
     public List<Categoria> consultarCategoriasPorNome(final String nome) {
         List<Categoria> categorias = new ArrayList<>();
-
         String sql = "SELECT * FROM %s WHERE Nome LIKE ? ORDER BY Nome".formatted(TABELA);
 
-        try (ResultSet rs = executarConsultaSQL("", TABELA, sql, "%" + nome + "%")) {
+        try (ResultSet rs = executarConsultaSQL(DATABASE, TABELA, sql, "%" + nome + "%")) {
+            validarNome(nome);
             while (rs.next()) {
                 Categoria categoria = new Categoria();
                 categoria.setCategoriaID(rs.getInt("CategoriaID"));
@@ -135,6 +149,8 @@ public final class Categoria {
             }
         } catch (SQLException erro) {
             System.err.printf("Erro ao consultar os Fabricantes por nome: %s%n", erro.getMessage());
+        } catch (Exception e) {
+            System.err.printf("Erro desconhecido ao consultar os Fabricantes por nome: %s%n", e.getMessage());
         }
 
         return categorias;
@@ -143,23 +159,26 @@ public final class Categoria {
 
     public boolean atualizarCategoria(final Integer CategoriaId, final String Nome, final String Status, final String Descricao) {
         try {
-            validarID(CategoriaId);
+            Categoria categoriaNova = new Categoria(CategoriaId, Nome, Status, Descricao);
+            String sql = "UPDATE %s SET Nome = ?, Status = ?, Descricao = ? WHERE CategoriaId = ?".formatted(TABELA);
+            return executarComandoSQL(DATABASE, TABELA, sql, categoriaNova.Nome, categoriaNova.Status, categoriaNova.Descricao, CategoriaId);
         } catch (IllegalArgumentException e) {
             System.err.printf("Erro ao atualizar a categoria: %s%n", e.getMessage());
-            return false;
+        } catch (Exception e) {
+            System.err.printf("Erro desconhecido ao atualizar a categoria: %s%n", e.getMessage());
         }
-        final String sql = "UPDATE %s SET Nome = ?, Status = ?, Descricao = ? WHERE CategoriaId = ?".formatted(TABELA);
-        return executarComandoSQL("", TABELA, sql, Nome, Status, Descricao, CategoriaId);
+        return false;
     }
 
     public boolean removerCategoria(final Integer CategoriaId) {
         try {
-            validarID(CategoriaId);
+            final String sql = "DELETE FROM %s WHERE CategoriaId = ?".formatted(TABELA);
+            return executarComandoSQL(DATABASE, TABELA, sql, validarID(CategoriaId));
         } catch (IllegalArgumentException e) {
             System.err.printf("Erro ao remover a categoria: %s%n", e.getMessage());
-            return false;
+        } catch (Exception e) {
+            System.err.printf("Erro desconhecido ao remover a categoria: %s%n", e.getMessage());
         }
-        final String sql = "DELETE FROM %s WHERE CategoriaId = ?".formatted(TABELA);
-        return executarComandoSQL("", TABELA, sql, CategoriaId);
+        return false;
     }
 }

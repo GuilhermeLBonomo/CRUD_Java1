@@ -2,15 +2,28 @@ package modelo;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.io.InputStream;
 import java.sql.*;
+import java.util.Properties;
+
+import static modelo.FuncoesUtilitarias.validarArgumentos;
 
 public final class Conexao {
-    private static final String USUARIO = "seu_usuario";
-    private static final String SENHA = "sua_senha";
-    private static final String DATABASE = "seu_banco_de_dados";
-    private static final String SERVER = "localhost";
-    private static final int PORTA = 3306;
+    private static final Properties properties = new Properties();
+    private static final String USUARIO = properties.getProperty("usuario");
+    private static final String SENHA = properties.getProperty("senha");
+    private static final String DATABASE = properties.getProperty("database");
+    private static final String SERVER = properties.getProperty("server");
+    private static final int PORTA = Integer.parseInt(properties.getProperty("porta"));
     private static final String URL = "jdbc:mariadb://" + SERVER + ":" + PORTA + "/" + DATABASE;
+
+    static {
+        try (InputStream input = Conexao.class.getClassLoader().getResourceAsStream("config.properties")) {
+            properties.load(input);
+        } catch (Exception e) {
+            System.err.println("Erro ao carregar o arquivo de configuração: " + e.getMessage());
+        }
+    }
 
     public static Connection obterConexao() throws SQLException {
         try {
@@ -44,7 +57,7 @@ public final class Conexao {
         try {
             String database_out = checarDatabase(database);
             checarTabela(database_out, tabela);
-
+            validarArgumentos(parametros);
             conexao = obterConexao();
             PreparedStatement ps = conexao.prepareStatement(sql);
 
@@ -65,7 +78,7 @@ public final class Conexao {
     }
 
     public static ResultSet executarConsultaSQL(final String database, final String tabela, final String sql, final Object... parametros) throws SQLException {
-        Connection conexao = null;
+        Connection conexao;
         ResultSet resultSet = null;
 
         try {
@@ -92,24 +105,21 @@ public final class Conexao {
 
 
     public static @NotNull String checarDatabase(final String database) throws SQLException {
-        String database_out = database;
-        if (database == null || database.isEmpty()) {
-            database_out = Conexao.DATABASE;
-        }
+        String database_out = (database == null || database.isEmpty()) ? Conexao.DATABASE : database;
+
         Connection conexao = null;
 
         try {
             conexao = obterConexao();
             String sql = "SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = ?";
-            try (PreparedStatement ps = conexao.prepareStatement(sql)) {
-                ps.setString(1, database_out);
-                ResultSet resultSet = ps.executeQuery();
+            PreparedStatement ps = conexao.prepareStatement(sql);
+            ps.setString(1, database_out);
+            ResultSet resultSet = ps.executeQuery();
 
-                if (!resultSet.next()) {
-                    System.err.println("O banco de dados '" + database_out + "' não existe.");
-                } else {
-                    System.out.println("O banco de dados '" + database_out + "' existe.");
-                }
+            if (!resultSet.next()) {
+                System.err.println("O banco de dados '" + database_out + "' não existe.");
+            } else {
+                System.out.println("O banco de dados '" + database_out + "' existe.");
             }
         } catch (SQLException e) {
             System.err.println("Erro ao checar o banco de dados: " + e.getMessage());
@@ -118,25 +128,26 @@ public final class Conexao {
         } finally {
             fecharConexao(conexao);
         }
+
         return database_out;
     }
 
     public static void checarTabela(final String database, final String tabela) throws SQLException {
         Connection conexao = null;
+
         try {
             conexao = obterConexao();
             String database_out = checarDatabase(database);
             String sql = "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?";
-            try (PreparedStatement ps = conexao.prepareStatement(sql)) {
-                ps.setString(1, database_out);
-                ps.setString(2, tabela);
-                ResultSet resultSet = ps.executeQuery();
+            PreparedStatement ps = conexao.prepareStatement(sql);
+            ps.setString(1, database_out);
+            ps.setString(2, tabela);
+            ResultSet resultSet = ps.executeQuery();
 
-                if (!resultSet.next()) {
-                    System.err.println("A tabela '" + tabela + "' não existe no banco de dados '" + database_out + "'.");
-                } else {
-                    System.out.println("A tabela '" + tabela + "' existe no banco de dados '" + database_out + "'.");
-                }
+            if (!resultSet.next()) {
+                System.err.println("A tabela '" + tabela + "' não existe no banco de dados '" + database_out + "'.");
+            } else {
+                System.out.println("A tabela '" + tabela + "' existe no banco de dados '" + database_out + "'.");
             }
         } catch (SQLException e) {
             System.err.println("Erro ao checar a tabela: " + e.getMessage());
@@ -148,4 +159,7 @@ public final class Conexao {
     }
 
 
+    public static String getDATABASE() {
+        return DATABASE;
+    }
 }
