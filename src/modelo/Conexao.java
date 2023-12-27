@@ -2,7 +2,6 @@ package modelo;
 
 import org.jetbrains.annotations.NotNull;
 
-import java.io.InputStream;
 import java.sql.*;
 import java.util.Properties;
 
@@ -10,46 +9,22 @@ import static modelo.FuncoesUtilitarias.validarArgumentos;
 
 public final class Conexao {
     private static final Properties properties = new Properties();
+
+    static {
+        try (java.io.InputStream input = Conexao.class.getClassLoader().getResourceAsStream("config.properties")) {
+            properties.load(input);
+        } catch (Exception e) {
+            System.err.printf("Erro ao carregar o arquivo de configurações: %s%n", e.getMessage());
+        }
+    }
+
     private static final String USUARIO = properties.getProperty("usuario");
     private static final String SENHA = properties.getProperty("senha");
     private static final String DATABASE = properties.getProperty("database");
     private static final String SERVER = properties.getProperty("server");
-    private static final int PORTA = Integer.parseInt(properties.getProperty("porta"));
+    private static final String PORTA = properties.getProperty("porta");
     private static final String URL = "jdbc:mariadb://" + SERVER + ":" + PORTA + "/" + DATABASE;
 
-    static {
-        try (InputStream input = Conexao.class.getClassLoader().getResourceAsStream("config.properties")) {
-            properties.load(input);
-        } catch (Exception e) {
-            System.err.println("Erro ao carregar o arquivo de configuração: " + e.getMessage());
-        }
-    }
-
-    public static Connection obterConexao() throws SQLException {
-        try {
-            checarDatabase("");
-            Class.forName("org.mariadb.jdbc.Driver");
-            return DriverManager.getConnection(URL, USUARIO, SENHA);
-        } catch (ClassNotFoundException e) {
-            throw new SQLException("Driver JDBC não encontrado", e);
-        } catch (SQLException e) {
-            throw new SQLException("Erro ao obter conexão. Verifique a URL, usuário e senha.", e);
-        } catch (Exception e) {
-            throw new SQLException("Erro desconhecido ao obter conexão.", e);
-        }
-    }
-
-    public static void fecharConexao(final Connection conexao) throws SQLException {
-        try {
-            if (conexao != null && !conexao.isClosed()) {
-                conexao.close();
-            }
-        } catch (SQLException e) {
-            throw new SQLException("Não foi possível fechar a conexão", e);
-        } catch (Exception e) {
-            throw new SQLException("Erro desconhecido ao fechar a conexão.", e);
-        }
-    }
 
     public static boolean executarComandoSQL(final String database, final String tabela, final String sql, final Object... parametros) {
         Connection conexao = null;
@@ -76,33 +51,6 @@ public final class Conexao {
             return false;
         }
     }
-
-    public static ResultSet executarConsultaSQL(final String database, final String tabela, final String sql, final Object... parametros) throws SQLException {
-        Connection conexao;
-        ResultSet resultSet = null;
-
-        try {
-            conexao = obterConexao();
-            checarDatabase(database);
-            checarTabela(database, tabela);
-
-            PreparedStatement ps = conexao.prepareStatement(sql);
-
-            for (int i = 0; i < parametros.length; i++) {
-                ps.setObject(i + 1, parametros[i]);
-            }
-
-            resultSet = ps.executeQuery();
-            fecharConexao(conexao);
-        } catch (SQLException e) {
-            System.err.printf("Erro SQL ao executar consulta: %s%n", e.getMessage());
-        } catch (Exception e) {
-            System.err.printf("Erro desconhecido ao executar consulta: %s%n", e.getMessage());
-        }
-
-        return resultSet;
-    }
-
 
     public static @NotNull String checarDatabase(final String database) throws SQLException {
         String database_out = (database == null || database.isEmpty()) ? Conexao.DATABASE : database;
@@ -158,6 +106,56 @@ public final class Conexao {
         }
     }
 
+    public static Connection obterConexao() throws SQLException {
+        try {
+            Class.forName("org.mariadb.jdbc.Driver");
+            return DriverManager.getConnection(URL, USUARIO, SENHA);
+        } catch (ClassNotFoundException e) {
+            throw new SQLException("Driver JDBC não encontrado", e);
+        } catch (SQLException e) {
+            throw new SQLException("Erro ao obter conexão. Verifique a URL, usuário e senha.", e);
+        } catch (Exception e) {
+            throw new SQLException("Erro desconhecido ao obter conexão.", e);
+        }
+    }
+
+    public static void fecharConexao(final Connection conexao) throws SQLException {
+        try {
+            if (conexao != null && !conexao.isClosed()) {
+                conexao.close();
+            }
+        } catch (SQLException e) {
+            throw new SQLException("Não foi possível fechar a conexão", e);
+        } catch (Exception e) {
+            throw new SQLException("Erro desconhecido ao fechar a conexão.", e);
+        }
+    }
+
+    public static ResultSet executarConsultaSQL(final String database, final String tabela, final String sql, final Object... parametros) throws SQLException {
+        Connection conexao;
+        ResultSet resultSet = null;
+
+        try {
+            conexao = obterConexao();
+            checarDatabase(database);
+            checarTabela(database, tabela);
+
+            PreparedStatement ps = conexao.prepareStatement(sql);
+
+            for (int i = 0; i < parametros.length; i++) {
+                ps.setObject(i + 1, parametros[i]);
+            }
+
+            resultSet = ps.executeQuery();
+            fecharConexao(conexao);
+        } catch (SQLException e) {
+            System.err.printf("Erro SQL ao executar consulta: %s%n", e.getMessage());
+        } catch (Exception e) {
+            System.err.printf("Erro desconhecido ao executar consulta: %s%n", e.getMessage());
+        }
+
+        return resultSet;
+    }
 
     public static String getDATABASE() {
         return DATABASE;
