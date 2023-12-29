@@ -98,9 +98,16 @@ public final class Categoria {
 
     public boolean cadastrarCategoria(final Integer categoriaID, final String nome, final String status, final String descricao) {
         try {
-            Categoria novaCategoria = new Categoria(categoriaID, nome, status, descricao);
-            String sql = "INSERT INTO %s (CategoriaID, Nome, Status, Descricao) VALUES (?, ?, ?, ?)".formatted(TABELA);
-            return executarComandoSQL(DATABASE, TABELA, sql, novaCategoria.CategoriaID, novaCategoria.Nome, novaCategoria.Status, novaCategoria.Descricao);
+            String sql;
+            if (categoriaID == null) {
+                validarNome(nome);
+                validarArgumentos(status, descricao);
+                sql = "INSERT INTO %s (Nome, Status, Descricao) VALUES (?, ?, ?)".formatted(TABELA);
+            } else {
+                Categoria novaCategoria = new Categoria(categoriaID, nome, status, descricao);
+                sql = "INSERT INTO %s (CategoriaID, Nome, Status, Descricao) VALUES (?, ?, ?, ?)".formatted(TABELA);
+            }
+            return executarComandoSQL(DATABASE, TABELA, sql, categoriaID, nome, status, descricao);
         } catch (IllegalArgumentException e) {
             System.err.printf("Erro ao definir categoria: %s%n", e.getMessage());
         } catch (Exception e) {

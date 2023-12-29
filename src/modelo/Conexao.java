@@ -66,8 +66,6 @@ public final class Conexao {
 
             if (!resultSet.next()) {
                 System.err.println("O banco de dados '" + database_out + "' não existe.");
-            } else {
-                System.out.println("O banco de dados '" + database_out + "' existe.");
             }
         } catch (SQLException e) {
             System.err.println("Erro ao checar o banco de dados: " + e.getMessage());
@@ -94,8 +92,6 @@ public final class Conexao {
 
             if (!resultSet.next()) {
                 System.err.println("A tabela '" + tabela + "' não existe no banco de dados '" + database_out + "'.");
-            } else {
-                System.out.println("A tabela '" + tabela + "' existe no banco de dados '" + database_out + "'.");
             }
         } catch (SQLException e) {
             System.err.println("Erro ao checar a tabela: " + e.getMessage());

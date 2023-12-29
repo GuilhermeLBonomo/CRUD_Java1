@@ -32,9 +32,16 @@ public final class Produto {
 
     public static boolean cadastrarProduto(final String nome, final Double preco, final Integer fabricanteID, final Integer categoriaID, final Integer produtoId) {
         try {
-            Produto produto = new Produto(produtoId, nome, preco, fabricanteID, categoriaID);
-            String sql = "INSERT INTO %s (Nome, Preco, FabricanteID, CategoriaID) VALUES (?, ?, ?, ?);".formatted(TABELA);
-            return executarComandoSQL(DATABASE, TABELA, sql, produto.Nome, produto.Preco, produto.FabricanteID, produto.CategoriaID);
+            String sql;
+            if (produtoId == null) {
+                validarNome(nome);
+                validarArgumentos(preco, fabricanteID, categoriaID);
+                sql = "INSERT INTO %s (Nome, Preco, FabricanteID, CategoriaID) VALUES (?, ?, ?, ?);".formatted(TABELA);
+            } else {
+                Produto produto = new Produto(produtoId, nome, preco, fabricanteID, categoriaID);
+                sql = "UPDATE %s SET Nome=?, Preco=?, FabricanteID=?, CategoriaID=? WHERE ProdutoID=?".formatted(TABELA);
+            }
+            return executarComandoSQL(DATABASE, TABELA, sql, nome, preco, fabricanteID, categoriaID);
         } catch (IllegalArgumentException e) {
             System.err.printf("Erro ao cadastrar o produto: %s%n", e.getMessage());
         } catch (Exception e) {

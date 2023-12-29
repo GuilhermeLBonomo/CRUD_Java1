@@ -98,9 +98,16 @@ public final class Fabricante {
 
     public boolean cadastrarFabricante(final Integer fabricanteID, final String nome, final String localizacao, final String descricao) {
         try {
-            Fabricante novoFabricante = new Fabricante(fabricanteID, nome, localizacao, descricao);
-            String sql = "INSERT INTO %s (FabricanteID, Nome, Localizacao, Descricao) VALUES (?, ?, ?, ?)".formatted(TABELA);
-            return executarComandoSQL(DATABASE, TABELA, sql, novoFabricante.FabricanteID, novoFabricante.Nome, novoFabricante.Localizacao, novoFabricante.Descricao);
+            String sql;
+            if (fabricanteID == null) {
+                validarNome(nome);
+                validarArgumentos(localizacao, descricao);
+                sql = "INSERT INTO %s (Nome, Localizacao, Descricao) VALUES (?, ?, ?)".formatted(TABELA);
+            } else {
+                Fabricante novoFabricante = new Fabricante(fabricanteID, nome, localizacao, descricao);
+                sql = "INSERT INTO %s (FabricanteID, Nome, Localizacao, Descricao) VALUES (?, ?, ?, ?)".formatted(TABELA);
+            }
+            return executarComandoSQL(DATABASE, TABELA, sql, fabricanteID, nome, localizacao, descricao);
         } catch (IllegalArgumentException e) {
             System.err.printf("Erro ao criar o Fabricante: %s%n", e.getMessage());
         } catch (Exception e) {
